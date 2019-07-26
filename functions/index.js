@@ -22,6 +22,7 @@ app.use(bodyParser.urlencoded({ extended: true }))
 app.post('/CreateCard', (req, res) => {
     console.log(req.body)
     res.status(201).json(req.body)
+    //toDev
 })
 
 exports.Express = functions.https.onRequest(app);
