@@ -3,6 +3,8 @@ const functions = require('firebase-functions');
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser')
+const admin = require('firebase-admin');
+admin.initializeApp()
 // // Create and Deploy Your First Cloud Functions
 // // https://firebase.google.com/docs/functions/write-firebase-functions
 //
@@ -21,8 +23,28 @@ app.use(bodyParser.urlencoded({ extended: true }))
 
 app.post('/CreateCard', (req, res) => {
     console.log(req.body)
-    res.status(201).json(req.body)
-    //toDev
+    // res.status(201).json(req.body)
+    admin.auth().verifyIdToken(req.body.userTk)
+        .then((decodedToken) => {
+            admin.firestore().collection('Users').doc(decodedToken.uid).get().then((doc) => {
+                stripe.customers.createSource(doc.data().Stripe.id, {
+                    source: req.body.cardTk.id,
+                }, () => {
+                    admin.firestore().collection('Users').doc(decodedToken.uid).update({
+                        updateAt: admin.firestore.Timestamp.now()
+                    }).then(() => {
+                        res.status(201).json('Created')
+
+                    }).catch((error) => {
+                        res.status(201).json(error)
+                    })
+                })
+            }).catch((error) => {
+                console.log(error)
+            });
+        }).catch((error) => {
+            console.log(error)
+        });
 })
 
 exports.Express = functions.https.onRequest(app);
