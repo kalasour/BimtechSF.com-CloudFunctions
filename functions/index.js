@@ -21,6 +21,40 @@ app.use(cors({ origin: true }));
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
 
+app.post('/PlaceOrder', (req, res) => {
+    // res.status(201).json(req.body)
+    admin.auth().verifyIdToken(req.body.userTk)
+        .then((decodedToken) => {
+            admin.firestore().collection('Users').doc(decodedToken.uid).get().then((doc) => {
+
+                stripe.charges.create({
+                    amount: parseInt(parseFloat(req.body.payload.Total) * 100),
+                    currency: "usd",
+                    customer: doc.data().Stripe.id,
+                    source: req.body.payload.Source.id, // obtained with Stripe.js
+                }, function (err, charge) {
+                    if (err) console.log(err)
+                    else {
+                        var saveObject = Object.assign(req.body.payload, charge)
+                        admin.firestore().collection('Charges').doc(saveObject.id).set(saveObject).catch((err) => {
+                            if (err) console.log(err)
+                        }).then(() => {
+                            res.status(201).json('success')
+                            saveObject.List.map(item => {
+                                admin.firestore().collection('Users').doc(decodedToken.uid).collection('Cart').doc(item.cartId).delete()
+                            })
+                        })
+
+                    }
+                })
+            }).catch((error) => {
+                console.log(error)
+            });
+        }).catch((error) => {
+            console.log(error)
+        });
+})
+
 app.post('/CreateCard', (req, res) => {
     // res.status(201).json(req.body)
     admin.auth().verifyIdToken(req.body.userTk)
