@@ -41,6 +41,9 @@ app.post('/PlaceOrder', (req, res) => {
                         }).then(() => {
                             res.status(201).json('success')
                             saveObject.List.map(item => {
+                                admin.firestore().collection('Stock').doc(item.id).update({
+                                    sold: admin.firestore.FieldValue.increment(item.amount)
+                                })
                                 admin.firestore().collection('Users').doc(decodedToken.uid).collection('Cart').doc(item.cartId).delete()
                             })
                         })
